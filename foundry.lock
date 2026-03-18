@@ -1,4 +1,10 @@
 {
+  "lib/3jane-contracts": {
+    "tag": {
+      "name": "v1.1.2",
+      "rev": "7701b43290062d2273452bfcd8b365e15e085174"
+    }
+  },
   "lib/forge-std": {
     "branch": {
       "name": "master",

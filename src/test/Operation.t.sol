@@ -3,197 +3,170 @@ pragma solidity ^0.8.18;
 
 import "forge-std/console2.sol";
 import {Setup, ERC20, IStrategyInterface} from "./utils/Setup.sol";
+import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
 
 contract OperationTest is Setup {
-    function setUp() public virtual override {
+    function setUp() public override {
         super.setUp();
     }
 
-    function test_setupStrategyOK() public {
-        console2.log("address of strategy", address(strategy));
+    function test_setupStrategyOK() public view {
         assertTrue(address(0) != address(strategy));
         assertEq(strategy.asset(), address(asset));
-        assertEq(strategy.management(), management);
-        assertEq(strategy.performanceFeeRecipient(), performanceFeeRecipient);
-        assertEq(strategy.keeper(), keeper);
-        // TODO: add additional check on strat params
+        assertEq(address(strategy.vault()), address(usd3));
+        assertEq(address(strategy.staking()), address(susd3));
     }
 
-    function test_operation(uint256 _amount) public {
-        vm.assume(_amount > minFuzzAmount && _amount < maxFuzzAmount);
+    function test_depositAndStake() public {
+        uint256 amount = 1_000e6;
+        mintAndDepositIntoStrategy(strategy, user, amount);
 
-        // Deposit into strategy
-        mintAndDepositIntoStrategy(strategy, user, _amount);
-
-        assertEq(strategy.totalAssets(), _amount, "!totalAssets");
-
-        // Earn Interest
-        skip(1 days);
-
-        // Report profit
-        vm.prank(keeper);
-        (uint256 profit, uint256 loss) = strategy.report();
-
-        // Check return Values
-        assertGe(profit, 0, "!profit");
-        assertEq(loss, 0, "!loss");
-
-        skip(strategy.profitMaxUnlockTime());
-
-        uint256 balanceBefore = asset.balanceOf(user);
-
-        // Withdraw all funds
-        vm.prank(user);
-        strategy.redeem(_amount, user, user);
-
-        assertGe(
-            asset.balanceOf(user),
-            balanceBefore + _amount,
-            "!final balance"
-        );
+        assertGt(strategy.balanceOfStake(), 0, "should have staked position");
+        assertEq(strategy.balanceOfVault(), 0, "no loose USD3 expected");
+        assertEq(strategy.balanceOfAsset(), 0, "no loose USDC expected");
     }
 
-    function test_profitableReport(
-        uint256 _amount,
-        uint16 _profitFactor
-    ) public {
-        vm.assume(_amount > minFuzzAmount && _amount < maxFuzzAmount);
-        _profitFactor = uint16(bound(uint256(_profitFactor), 10, MAX_BPS));
+    function test_depositWhitelistEnforced() public {
+        address nonWhitelisted = makeAddr("nonWhitelisted");
+        uint256 amount = 1_000e6;
+        airdrop(asset, nonWhitelisted, amount);
 
-        // Deposit into strategy
-        mintAndDepositIntoStrategy(strategy, user, _amount);
+        assertEq(strategy.availableDepositLimit(nonWhitelisted), 0);
 
-        assertEq(strategy.totalAssets(), _amount, "!totalAssets");
-
-        // Earn Interest
-        skip(1 days);
-
-        // TODO: implement logic to simulate earning interest.
-        uint256 toAirdrop = (_amount * _profitFactor) / MAX_BPS;
-        airdrop(asset, address(strategy), toAirdrop);
-
-        // Report profit
-        vm.prank(keeper);
-        (uint256 profit, uint256 loss) = strategy.report();
-
-        // Check return Values
-        assertGe(profit, toAirdrop, "!profit");
-        assertEq(loss, 0, "!loss");
-
-        skip(strategy.profitMaxUnlockTime());
-
-        uint256 balanceBefore = asset.balanceOf(user);
-
-        // Withdraw all funds
-        vm.prank(user);
-        strategy.redeem(_amount, user, user);
-
-        assertGe(
-            asset.balanceOf(user),
-            balanceBefore + _amount,
-            "!final balance"
-        );
+        vm.startPrank(nonWhitelisted);
+        asset.approve(address(strategy), amount);
+        vm.expectRevert("ERC4626: deposit more than max");
+        strategy.deposit(amount, nonWhitelisted);
+        vm.stopPrank();
     }
 
-    function test_profitableReport_withFees(
-        uint256 _amount,
-        uint16 _profitFactor
-    ) public {
-        vm.assume(_amount > minFuzzAmount && _amount < maxFuzzAmount);
-        _profitFactor = uint16(bound(uint256(_profitFactor), 10, MAX_BPS));
+    function test_withdrawDuringLockReturnsZero() public {
+        uint256 amount = 1_000e6;
+        mintAndDepositIntoStrategy(strategy, user, amount);
 
-        // Set protocol fee to 0 and perf fee to 10%
-        setFees(0, 1_000);
-
-        // Deposit into strategy
-        mintAndDepositIntoStrategy(strategy, user, _amount);
-
-        assertEq(strategy.totalAssets(), _amount, "!totalAssets");
-
-        // Earn Interest
-        skip(1 days);
-
-        // TODO: implement logic to simulate earning interest.
-        uint256 toAirdrop = (_amount * _profitFactor) / MAX_BPS;
-        airdrop(asset, address(strategy), toAirdrop);
-
-        // Report profit
-        vm.prank(keeper);
-        (uint256 profit, uint256 loss) = strategy.report();
-
-        // Check return Values
-        assertGe(profit, toAirdrop, "!profit");
-        assertEq(loss, 0, "!loss");
-
-        skip(strategy.profitMaxUnlockTime());
-
-        // Get the expected fee
-        uint256 expectedShares = (profit * 1_000) / MAX_BPS;
-
-        assertEq(strategy.balanceOf(performanceFeeRecipient), expectedShares);
-
-        uint256 balanceBefore = asset.balanceOf(user);
-
-        // Withdraw all funds
-        vm.prank(user);
-        strategy.redeem(_amount, user, user);
-
-        assertGe(
-            asset.balanceOf(user),
-            balanceBefore + _amount,
-            "!final balance"
-        );
-
-        vm.prank(performanceFeeRecipient);
-        strategy.redeem(
-            expectedShares,
-            performanceFeeRecipient,
-            performanceFeeRecipient
-        );
-
-        checkStrategyTotals(strategy, 0, 0, 0);
-
-        assertGe(
-            asset.balanceOf(performanceFeeRecipient),
-            expectedShares,
-            "!perf fee out"
-        );
+        uint256 maxWithdraw = strategy.vaultsMaxWithdraw();
+        assertEq(maxWithdraw, 0, "staked funds should be locked");
     }
 
-    function test_tendTrigger(uint256 _amount) public {
-        vm.assume(_amount > minFuzzAmount && _amount < maxFuzzAmount);
+    function test_withdrawAfterLockExpires() public {
+        uint256 amount = 1_000e6;
+        mintAndDepositIntoStrategy(strategy, user, amount);
 
-        (bool trigger, ) = strategy.tendTrigger();
-        assertTrue(!trigger);
+        skipLockPeriod();
 
-        // Deposit into strategy
-        mintAndDepositIntoStrategy(strategy, user, _amount);
-
-        (trigger, ) = strategy.tendTrigger();
-        assertTrue(!trigger);
-
-        // Skip some time
-        skip(1 days);
-
-        (trigger, ) = strategy.tendTrigger();
-        assertTrue(!trigger);
+        uint256 maxWithdraw = strategy.vaultsMaxWithdraw();
+        assertGt(maxWithdraw, 0, "should be able to withdraw after lock");
 
         vm.prank(keeper);
         strategy.report();
 
-        (trigger, ) = strategy.tendTrigger();
-        assertTrue(!trigger);
+        uint256 shares = strategy.balanceOf(user);
+        vm.prank(user);
+        strategy.redeem(shares, user, user);
 
-        // Unlock Profits
-        skip(strategy.profitMaxUnlockTime());
+        assertGt(asset.balanceOf(user), 0, "user should have received USDC");
+    }
 
-        (trigger, ) = strategy.tendTrigger();
-        assertTrue(!trigger);
+    function test_profitableReport() public {
+        uint256 amount = 1_000e6;
+        mintAndDepositIntoStrategy(strategy, user, amount);
+
+        uint256 beforeAssets = strategy.totalAssets();
+
+        skipLockPeriod();
+
+        // Simulate yield: airdrop USD3 tokens to sUSD3 (mimics performance fee flow)
+        uint256 yieldAmount = 10e6; // 10 USDC worth of USD3
+        airdrop(asset, address(this), yieldAmount);
+        asset.approve(address(usd3), yieldAmount);
+        usd3.deposit(yieldAmount, address(susd3));
+
+        // Report on sUSD3 to realize the yield
+        vm.prank(keeper);
+        susd3.report();
+
+        // Skip past profit unlock time so sUSD3 share price increases
+        skip(profitMaxUnlockTime + 1);
+
+        // Now our strategy should see increased value
+        vm.prank(keeper);
+        (uint256 profit, uint256 loss) = strategy.report();
+
+        assertGt(profit, 0, "should have profit");
+        assertEq(loss, 0, "should have no loss");
+        assertGt(strategy.totalAssets(), beforeAssets, "total assets should increase");
+    }
+
+    function test_tendStakesIdleUSD3() public {
+        uint256 amount = 1_000e6;
+        mintAndDepositIntoStrategy(strategy, user, amount);
+
+        assertEq(strategy.balanceOfVault(), 0, "no loose USD3");
+        assertGt(strategy.balanceOfStake(), 0, "should be staked");
+        (bool shouldTend,) = strategy.tendTrigger();
+        assertFalse(shouldTend);
+    }
+
+    function test_shutdownDoesNotUnlockFunds() public {
+        uint256 amount = 1_000e6;
+        mintAndDepositIntoStrategy(strategy, user, amount);
+
+        vm.prank(emergencyAdmin);
+        strategy.shutdownStrategy();
+
+        // During lock, vaultsMaxWithdraw is 0, so emergencyWithdraw
+        // would revert with ZERO_ASSETS. Staked funds remain locked.
+        assertEq(strategy.vaultsMaxWithdraw(), 0, "nothing freeable during lock");
+        assertGt(strategy.balanceOfStake(), 0, "staked funds still locked");
+    }
+
+    function test_shutdownWithdrawAfterLock() public {
+        uint256 amount = 1_000e6;
+        mintAndDepositIntoStrategy(strategy, user, amount);
+
+        skipLockPeriod();
+
+        vm.prank(emergencyAdmin);
+        strategy.shutdownStrategy();
+
+        vm.prank(emergencyAdmin);
+        strategy.emergencyWithdraw(type(uint256).max);
+
+        assertEq(strategy.balanceOfStake(), 0, "should have unstaked");
+        assertGt(asset.balanceOf(address(strategy)), 0, "strategy should hold USDC");
+    }
+
+    function test_cooldownManagement() public {
+        uint256 amount = 1_000e6;
+        mintAndDepositIntoStrategy(strategy, user, amount);
+
+        skipLockPeriod();
+
+        uint256 stakingShares = ERC20(address(susd3)).balanceOf(address(strategy));
+
+        vm.prank(management);
+        strategy.startCooldown(stakingShares);
+
+        vm.prank(management);
+        strategy.cancelCooldown();
 
         vm.prank(user);
-        strategy.redeem(_amount, user, user);
+        vm.expectRevert("!management");
+        strategy.startCooldown(stakingShares);
+    }
 
-        (trigger, ) = strategy.tendTrigger();
-        assertTrue(!trigger);
+    function test_setDepositorWhitelist() public {
+        address newDepositor = makeAddr("newDepositor");
+
+        assertFalse(strategy.depositorWhitelist(newDepositor));
+
+        vm.prank(management);
+        strategy.setDepositorWhitelist(newDepositor, true);
+
+        assertTrue(strategy.depositorWhitelist(newDepositor));
+
+        vm.prank(user);
+        vm.expectRevert("!management");
+        strategy.setDepositorWhitelist(newDepositor, false);
     }
 }
