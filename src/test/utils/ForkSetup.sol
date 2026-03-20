@@ -32,7 +32,7 @@ contract ForkSetup is Test, IEvents {
     uint256 public profitMaxUnlockTime = 10 days;
 
     function setUp() public virtual {
-        vm.createSelectFork(vm.envString("FORK_RPC_URL"), FORK_BLOCK);
+        vm.createSelectFork(vm.envString("ETH_RPC_URL"), FORK_BLOCK);
 
         asset = ERC20(USDC_ADDR);
 
