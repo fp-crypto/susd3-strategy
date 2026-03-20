@@ -8,8 +8,6 @@ contract StrategyFactory {
     event NewStrategy(address indexed strategy, address indexed asset);
 
     address public immutable emergencyAdmin;
-    address public immutable vault;
-    address public immutable staking;
 
     address public management;
     address public performanceFeeRecipient;
@@ -22,24 +20,19 @@ contract StrategyFactory {
         address _management,
         address _performanceFeeRecipient,
         address _keeper,
-        address _emergencyAdmin,
-        address _vault,
-        address _staking
+        address _emergencyAdmin
     ) {
         management = _management;
         performanceFeeRecipient = _performanceFeeRecipient;
         keeper = _keeper;
         emergencyAdmin = _emergencyAdmin;
-        vault = _vault;
-        staking = _staking;
     }
 
     function newStrategy(
-        address _asset,
         string calldata _name
     ) external virtual returns (address) {
         IStrategyInterface _newStrategy = IStrategyInterface(
-            address(new Strategy(_asset, _name, vault, staking))
+            address(new Strategy(_name))
         );
 
         _newStrategy.setPerformanceFeeRecipient(performanceFeeRecipient);
@@ -47,6 +40,7 @@ contract StrategyFactory {
         _newStrategy.setPendingManagement(management);
         _newStrategy.setEmergencyAdmin(emergencyAdmin);
 
+        address _asset = _newStrategy.asset();
         emit NewStrategy(address(_newStrategy), _asset);
 
         deployments[_asset] = address(_newStrategy);

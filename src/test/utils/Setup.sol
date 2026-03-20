@@ -24,6 +24,7 @@ import {
     TransparentUpgradeableProxy
 } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
+// ProxyAdmin + TransparentUpgradeableProxy still needed for MorphoCredit deployment
 
 import {MockProtocolConfig} from "./MockProtocolConfig.sol";
 import {MockERC20} from "./MockERC20.sol";
@@ -37,6 +38,13 @@ interface IFactory {
 }
 
 contract Setup is Test, IEvents {
+    // Hardcoded addresses matching Strategy constants
+    address internal constant USDC_ADDR = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address internal constant USD3_ADDR = 0x056B269Eb1f75477a8666ae8C7fE01b64dD55eCc;
+    address internal constant SUSD3_ADDR = 0xf689555121e529Ff0463e191F9Bd9d1E496164a7;
+    address internal constant WAUSDC_ADDR = 0xD4fa2D31b7968E448877f69A96DE69f5de8cD23E;
+    address internal constant TOKENIZED_STRATEGY_ADDR = 0xD377919FA87120584B21279a491F82D5265A139c;
+
     ERC20 public asset; // USDC
     IStrategyInterface public strategy;
     StrategyFactory public strategyFactory;
@@ -71,19 +79,16 @@ contract Setup is Test, IEvents {
             management,
             performanceFeeRecipient,
             keeper,
-            emergencyAdmin,
-            address(usd3),
-            address(susd3)
+            emergencyAdmin
         );
 
         strategy = IStrategyInterface(
-            strategyFactory.newStrategy(address(asset), "sUSD3 Compounder")
+            strategyFactory.newStrategy("sUSD3 Compounder")
         );
 
         vm.prank(management);
         strategy.acceptManagement();
 
-        // Whitelist the user for deposits
         vm.prank(management);
         strategy.setDepositorWhitelist(user, true);
 
@@ -92,47 +97,38 @@ contract Setup is Test, IEvents {
 
         vm.label(keeper, "keeper");
         vm.label(factory, "factory");
-        vm.label(address(asset), "USDC");
+        vm.label(USDC_ADDR, "USDC");
         vm.label(management, "management");
         vm.label(address(strategy), "strategy");
-        vm.label(address(usd3), "USD3");
-        vm.label(address(susd3), "sUSD3");
+        vm.label(USD3_ADDR, "USD3");
+        vm.label(SUSD3_ADDR, "sUSD3");
         vm.label(performanceFeeRecipient, "performanceFeeRecipient");
     }
 
     function _deployMockTokens() internal {
-        // Deploy and etch USDC at mainnet address
-        address usdcAddr = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
         MockERC20 mockUsdc = new MockERC20("USD Coin", "USDC", 6);
-        vm.etch(usdcAddr, address(mockUsdc).code);
-        vm.store(usdcAddr, bytes32(uint256(5)), bytes32(uint256(6)));
-        asset = ERC20(usdcAddr);
+        vm.etch(USDC_ADDR, address(mockUsdc).code);
+        vm.store(USDC_ADDR, bytes32(uint256(5)), bytes32(uint256(6)));
+        asset = ERC20(USDC_ADDR);
 
-        // Deploy and etch waUSDC at mainnet address
-        address waUSDCAddr = 0xD4fa2D31b7968E448877f69A96DE69f5de8cD23E;
-        MockWaUSDC mockWaUSDC = new MockWaUSDC(usdcAddr);
-        vm.etch(waUSDCAddr, address(mockWaUSDC).code);
-        vm.store(waUSDCAddr, bytes32(uint256(5)), bytes32(uint256(uint160(usdcAddr))));
-        vm.store(waUSDCAddr, bytes32(uint256(6)), bytes32(uint256(1e6)));
-        waUSDC = MockWaUSDC(waUSDCAddr);
-        vm.label(waUSDCAddr, "waUSDC");
+        MockWaUSDC mockWaUSDC = new MockWaUSDC(USDC_ADDR);
+        vm.etch(WAUSDC_ADDR, address(mockWaUSDC).code);
+        vm.store(WAUSDC_ADDR, bytes32(uint256(5)), bytes32(uint256(uint160(USDC_ADDR))));
+        vm.store(WAUSDC_ADDR, bytes32(uint256(6)), bytes32(uint256(1e6)));
+        waUSDC = MockWaUSDC(WAUSDC_ADDR);
     }
 
     function _deployTokenizedStrategy() internal {
         MockStrategyFactory mockFactory = new MockStrategyFactory();
         TokenizedStrategy tokenizedStrategyImpl = new TokenizedStrategy(address(mockFactory));
-        address expectedAddress = 0xD377919FA87120584B21279a491F82D5265A139c;
-        vm.etch(expectedAddress, address(tokenizedStrategyImpl).code);
-        vm.label(expectedAddress, "TokenizedStrategy");
+        vm.etch(TOKENIZED_STRATEGY_ADDR, address(tokenizedStrategyImpl).code);
     }
 
     function _deployUSD3AndSUSD3() internal {
         protocolConfig = new MockProtocolConfig();
         protocolConfig.setConfig(ProtocolConfigLib.DEBT_CAP, 100_000_000e6);
 
-        // Deploy MorphoCredit
         address morphoOwner = makeAddr("MorphoOwner");
-        address proxyAdminOwner = makeAddr("ProxyAdminOwner");
 
         MorphoCredit morphoImpl = new MorphoCredit(address(protocolConfig));
         ProxyAdmin morphoProxyAdmin = new ProxyAdmin();
@@ -141,12 +137,11 @@ contract Setup is Test, IEvents {
             new TransparentUpgradeableProxy(address(morphoImpl), address(morphoProxyAdmin), morphoInitData);
         IMorpho morpho = IMorpho(address(morphoProxy));
 
-        // Create market
         IrmMock irm = new IrmMock();
         CreditLineMock creditLine = new CreditLineMock(address(morpho));
         MarketParams memory marketParams = MarketParams({
             loanToken: address(waUSDC),
-            collateralToken: address(asset),
+            collateralToken: USDC_ADDR,
             oracle: address(0),
             irm: address(irm),
             lltv: 0,
@@ -159,44 +154,33 @@ contract Setup is Test, IEvents {
         morpho.createMarket(marketParams);
         vm.stopPrank();
 
-        // Deploy USD3
+        // Etch USD3 implementation directly at the hardcoded address
         USD3 usd3Impl = new USD3();
-        ProxyAdmin usd3ProxyAdmin = new ProxyAdmin();
-        bytes memory usd3InitData = abi.encodeWithSelector(
-            USD3.initialize.selector,
+        vm.etch(USD3_ADDR, address(usd3Impl).code);
+        USD3(USD3_ADDR).initialize(
             address(morpho),
             MarketParamsLib.id(marketParams),
             management,
             keeper
         );
-        TransparentUpgradeableProxy usd3Proxy =
-            new TransparentUpgradeableProxy(address(usd3Impl), address(usd3ProxyAdmin), usd3InitData);
-        USD3(address(usd3Proxy)).reinitialize();
-        usd3 = USD3(address(usd3Proxy));
+        USD3(USD3_ADDR).reinitialize();
+        usd3 = USD3(USD3_ADDR);
 
         vm.prank(morphoOwner);
-        MorphoCredit(address(morpho)).setUsd3(address(usd3));
+        MorphoCredit(address(morpho)).setUsd3(USD3_ADDR);
 
         helper = new HelperMock(address(morpho));
         vm.prank(morphoOwner);
         MorphoCredit(address(morpho)).setHelper(address(helper));
 
-        // Deploy sUSD3
+        // Etch sUSD3 implementation directly at the hardcoded address
         sUSD3 susd3Impl = new sUSD3();
-        ProxyAdmin susd3ProxyAdmin = new ProxyAdmin();
-        bytes memory susd3InitData = abi.encodeWithSelector(
-            sUSD3.initialize.selector,
-            address(usd3),
-            management,
-            keeper
-        );
-        TransparentUpgradeableProxy susd3Proxy =
-            new TransparentUpgradeableProxy(address(susd3Impl), address(susd3ProxyAdmin), susd3InitData);
-        susd3 = sUSD3(address(susd3Proxy));
+        vm.etch(SUSD3_ADDR, address(susd3Impl).code);
+        sUSD3(SUSD3_ADDR).initialize(USD3_ADDR, management, keeper);
+        susd3 = sUSD3(SUSD3_ADDR);
 
-        // Link USD3 and sUSD3
         vm.prank(management);
-        usd3.setSUSD3(address(susd3));
+        usd3.setSUSD3(SUSD3_ADDR);
     }
 
     function depositIntoStrategy(

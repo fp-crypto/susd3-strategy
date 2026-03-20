@@ -13,6 +13,10 @@ interface ISUSD3 {
 contract Strategy is Base4626Compounder {
     using SafeERC20 for ERC20;
 
+    address internal constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address internal constant USD3 = 0x056B269Eb1f75477a8666ae8C7fE01b64dD55eCc;
+    address internal constant SUSD3 = 0xf689555121e529Ff0463e191F9Bd9d1E496164a7;
+
     IStrategy public immutable staking;
 
     mapping(address => bool) public depositorWhitelist;
@@ -20,15 +24,10 @@ contract Strategy is Base4626Compounder {
     event DepositorWhitelistUpdated(address indexed depositor, bool allowed);
 
     constructor(
-        address _asset,
-        string memory _name,
-        address _vault,
-        address _staking
-    ) Base4626Compounder(_asset, _name, _vault) {
-        require(IStrategy(_staking).asset() == _vault, "wrong staking");
-        staking = IStrategy(_staking);
-
-        ERC20(_vault).forceApprove(_staking, type(uint256).max);
+        string memory _name
+    ) Base4626Compounder(USDC, _name, USD3) {
+        staking = IStrategy(SUSD3);
+        ERC20(USD3).forceApprove(SUSD3, type(uint256).max);
     }
 
     /*//////////////////////////////////////////////////////////////
