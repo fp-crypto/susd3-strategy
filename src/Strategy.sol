@@ -25,10 +25,15 @@ contract Strategy is Base4626Compounder, AuctionSwapper {
     address internal constant JANE = 0x333333330522F64EE8d0b3039c460b41670e3404;
     address internal constant REWARDS_DISTRIBUTOR = 0xaC6985D4dBcd89CCAD71DB9bf0309eaF57F064e8;
 
+    /// @notice The sUSD3 staking vault.
     IStrategy public immutable staking;
 
+    /// @notice Whether a given address is allowed to deposit.
     mapping(address => bool) public depositorWhitelist;
 
+    /// @notice Emitted when a depositor's whitelist status changes.
+    /// @param depositor The address whose status changed.
+    /// @param allowed The new whitelist status.
     event DepositorWhitelistUpdated(address indexed depositor, bool allowed);
 
     constructor(string memory _name) Base4626Compounder(USDC, _name, USD3) {
@@ -110,6 +115,9 @@ contract Strategy is Base4626Compounder, AuctionSwapper {
                         REWARDS
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice Claim JANE rewards from the merkle distributor.
+    /// @param _totalAllocation Total allocation for this strategy in the merkle tree.
+    /// @param _proof Merkle proof for the claim.
     function claimRewards(uint256 _totalAllocation, bytes32[] calldata _proof) external {
         IRewardsDistributor(REWARDS_DISTRIBUTOR).claim(address(this), _totalAllocation, _proof);
     }
@@ -118,27 +126,39 @@ contract Strategy is Base4626Compounder, AuctionSwapper {
                         MANAGEMENT FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice Set whether a depositor is allowed to deposit.
+    /// @param _depositor Address to update.
+    /// @param _allowed Whether the address is whitelisted.
     function setDepositorWhitelist(address _depositor, bool _allowed) external onlyManagement {
         depositorWhitelist[_depositor] = _allowed;
         emit DepositorWhitelistUpdated(_depositor, _allowed);
     }
 
+    /// @notice Set the auction contract to use for selling rewards.
+    /// @param _auction The auction contract address.
     function setAuction(address _auction) external onlyManagement {
         _setAuction(_auction);
     }
 
+    /// @notice Enable or disable auction usage for reward selling.
+    /// @param _useAuction Whether to use auctions.
     function setUseAuction(bool _useAuction) external onlyManagement {
         _setUseAuction(_useAuction);
     }
 
+    /// @notice Set the minimum JANE amount required to kick an auction.
+    /// @param _minAmountToSell Minimum token amount.
     function setMinAmountToSell(uint256 _minAmountToSell) external onlyManagement {
         _setMinAmountToSell(_minAmountToSell);
     }
 
+    /// @notice Start the sUSD3 cooldown period for withdrawals.
+    /// @param _shares Number of sUSD3 shares to cooldown.
     function startCooldown(uint256 _shares) external onlyManagement {
         ISUSD3(address(staking)).startCooldown(_shares);
     }
 
+    /// @notice Cancel any active sUSD3 cooldown.
     function cancelCooldown() external onlyManagement {
         ISUSD3(address(staking)).cancelCooldown();
     }
