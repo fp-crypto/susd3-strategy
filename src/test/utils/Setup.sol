@@ -20,9 +20,7 @@ import {IrmMock} from "@3jane/mocks/IrmMock.sol";
 import {HelperMock} from "@3jane/mocks/HelperMock.sol";
 import {CreditLineMock} from "@3jane/mocks/CreditLineMock.sol";
 import {ProtocolConfigLib} from "@3jane/libraries/ProtocolConfigLib.sol";
-import {
-    TransparentUpgradeableProxy
-} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 // ProxyAdmin + TransparentUpgradeableProxy still needed for MorphoCredit deployment
 
@@ -75,16 +73,9 @@ contract Setup is Test, IEvents {
         _deployTokenizedStrategy();
         _deployUSD3AndSUSD3();
 
-        strategyFactory = new StrategyFactory(
-            management,
-            performanceFeeRecipient,
-            keeper,
-            emergencyAdmin
-        );
+        strategyFactory = new StrategyFactory(management, performanceFeeRecipient, keeper, emergencyAdmin);
 
-        strategy = IStrategyInterface(
-            strategyFactory.newStrategy("sUSD3 Compounder")
-        );
+        strategy = IStrategyInterface(strategyFactory.newStrategy("sUSD3 Compounder"));
 
         vm.prank(management);
         strategy.acceptManagement();
@@ -157,12 +148,7 @@ contract Setup is Test, IEvents {
         // Etch USD3 implementation directly at the hardcoded address
         USD3 usd3Impl = new USD3();
         vm.etch(USD3_ADDR, address(usd3Impl).code);
-        USD3(USD3_ADDR).initialize(
-            address(morpho),
-            MarketParamsLib.id(marketParams),
-            management,
-            keeper
-        );
+        USD3(USD3_ADDR).initialize(address(morpho), MarketParamsLib.id(marketParams), management, keeper);
         USD3(USD3_ADDR).reinitialize();
         usd3 = USD3(USD3_ADDR);
 
@@ -183,11 +169,7 @@ contract Setup is Test, IEvents {
         usd3.setSUSD3(SUSD3_ADDR);
     }
 
-    function depositIntoStrategy(
-        IStrategyInterface _strategy,
-        address _user,
-        uint256 _amount
-    ) public {
+    function depositIntoStrategy(IStrategyInterface _strategy, address _user, uint256 _amount) public {
         vm.prank(_user);
         asset.approve(address(_strategy), _amount);
 
@@ -195,11 +177,7 @@ contract Setup is Test, IEvents {
         _strategy.deposit(_amount, _user);
     }
 
-    function mintAndDepositIntoStrategy(
-        IStrategyInterface _strategy,
-        address _user,
-        uint256 _amount
-    ) public {
+    function mintAndDepositIntoStrategy(IStrategyInterface _strategy, address _user, uint256 _amount) public {
         airdrop(asset, _user, _amount);
         depositIntoStrategy(_strategy, _user, _amount);
     }

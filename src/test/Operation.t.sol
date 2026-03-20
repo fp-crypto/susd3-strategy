@@ -155,6 +155,36 @@ contract OperationTest is Setup {
         strategy.startCooldown(stakingShares);
     }
 
+    function test_setAuction() public {
+        address fakeAuction = makeAddr("auction");
+
+        // Non-management cannot set
+        vm.prank(user);
+        vm.expectRevert("!management");
+        strategy.setAuction(fakeAuction);
+    }
+
+    function test_setMinAmountToSell() public {
+        vm.prank(management);
+        strategy.setMinAmountToSell(1e18);
+
+        // Non-management cannot set
+        vm.prank(user);
+        vm.expectRevert("!management");
+        strategy.setMinAmountToSell(0);
+    }
+
+    function test_reportWithoutAuction() public {
+        uint256 amount = 1_000e6;
+        mintAndDepositIntoStrategy(strategy, user, amount);
+
+        skipLockPeriod();
+
+        // Report should not revert even with no auction configured
+        vm.prank(keeper);
+        strategy.report();
+    }
+
     function test_setDepositorWhitelist() public {
         address newDepositor = makeAddr("newDepositor");
 

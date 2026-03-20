@@ -21,10 +21,21 @@ contract MockWaUSDC is ERC20 {
         _;
     }
 
-    function paused() public view returns (bool) { return _paused; }
-    function setPaused(bool paused_) external { _paused = paused_; }
-    function asset() public view returns (address) { return _asset; }
-    function decimals() public pure override returns (uint8) { return 6; }
+    function paused() public view returns (bool) {
+        return _paused;
+    }
+
+    function setPaused(bool paused_) external {
+        _paused = paused_;
+    }
+
+    function asset() public view returns (address) {
+        return _asset;
+    }
+
+    function decimals() public pure override returns (uint8) {
+        return 6;
+    }
 
     function deposit(uint256 assets, address receiver) public whenNotPaused returns (uint256 shares) {
         shares = previewDeposit(assets);
@@ -61,16 +72,41 @@ contract MockWaUSDC is ERC20 {
         return shares.mulDiv(sharePrice, 1e6, Math.Rounding.Down);
     }
 
-    function previewDeposit(uint256 assets) public view returns (uint256) { return convertToShares(assets); }
-    function previewWithdraw(uint256 assets) public view returns (uint256) { return assets.mulDiv(1e6, sharePrice, Math.Rounding.Up); }
-    function previewRedeem(uint256 shares) public view returns (uint256) { return convertToAssets(shares); }
-    function previewMint(uint256 shares) public view returns (uint256) { return shares.mulDiv(sharePrice, 1e6, Math.Rounding.Up); }
-    function totalAssets() public view returns (uint256) { return IERC20(_asset).balanceOf(address(this)); }
+    function previewDeposit(uint256 assets) public view returns (uint256) {
+        return convertToShares(assets);
+    }
 
-    function maxDeposit(address) public view returns (uint256) { return _paused ? 0 : type(uint256).max; }
-    function maxMint(address) public view returns (uint256) { return _paused ? 0 : type(uint256).max; }
-    function maxWithdraw(address owner) public view returns (uint256) { return _paused ? 0 : convertToAssets(balanceOf(owner)); }
-    function maxRedeem(address owner) public view returns (uint256) { return _paused ? 0 : balanceOf(owner); }
+    function previewWithdraw(uint256 assets) public view returns (uint256) {
+        return assets.mulDiv(1e6, sharePrice, Math.Rounding.Up);
+    }
+
+    function previewRedeem(uint256 shares) public view returns (uint256) {
+        return convertToAssets(shares);
+    }
+
+    function previewMint(uint256 shares) public view returns (uint256) {
+        return shares.mulDiv(sharePrice, 1e6, Math.Rounding.Up);
+    }
+
+    function totalAssets() public view returns (uint256) {
+        return IERC20(_asset).balanceOf(address(this));
+    }
+
+    function maxDeposit(address) public view returns (uint256) {
+        return _paused ? 0 : type(uint256).max;
+    }
+
+    function maxMint(address) public view returns (uint256) {
+        return _paused ? 0 : type(uint256).max;
+    }
+
+    function maxWithdraw(address owner) public view returns (uint256) {
+        return _paused ? 0 : convertToAssets(balanceOf(owner));
+    }
+
+    function maxRedeem(address owner) public view returns (uint256) {
+        return _paused ? 0 : balanceOf(owner);
+    }
 
     function mint(uint256 shares, address receiver) public whenNotPaused returns (uint256 assets) {
         assets = previewMint(shares);

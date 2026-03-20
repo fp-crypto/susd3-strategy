@@ -16,24 +16,15 @@ contract StrategyFactory {
     /// @notice Track the deployments. asset => strategy
     mapping(address => address) public deployments;
 
-    constructor(
-        address _management,
-        address _performanceFeeRecipient,
-        address _keeper,
-        address _emergencyAdmin
-    ) {
+    constructor(address _management, address _performanceFeeRecipient, address _keeper, address _emergencyAdmin) {
         management = _management;
         performanceFeeRecipient = _performanceFeeRecipient;
         keeper = _keeper;
         emergencyAdmin = _emergencyAdmin;
     }
 
-    function newStrategy(
-        string calldata _name
-    ) external virtual returns (address) {
-        IStrategyInterface _newStrategy = IStrategyInterface(
-            address(new Strategy(_name))
-        );
+    function newStrategy(string calldata _name) external virtual returns (address) {
+        IStrategyInterface _newStrategy = IStrategyInterface(address(new Strategy(_name)));
 
         _newStrategy.setPerformanceFeeRecipient(performanceFeeRecipient);
         _newStrategy.setKeeper(keeper);
@@ -47,20 +38,14 @@ contract StrategyFactory {
         return address(_newStrategy);
     }
 
-    function setAddresses(
-        address _management,
-        address _performanceFeeRecipient,
-        address _keeper
-    ) external {
+    function setAddresses(address _management, address _performanceFeeRecipient, address _keeper) external {
         require(msg.sender == management, "!management");
         management = _management;
         performanceFeeRecipient = _performanceFeeRecipient;
         keeper = _keeper;
     }
 
-    function isDeployedStrategy(
-        address _strategy
-    ) external view returns (bool) {
+    function isDeployedStrategy(address _strategy) external view returns (bool) {
         address _asset = IStrategyInterface(_strategy).asset();
         return deployments[_asset] == _strategy;
     }

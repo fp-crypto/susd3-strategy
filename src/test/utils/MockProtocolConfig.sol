@@ -1,12 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.18;
 
-import {
-    IProtocolConfig,
-    MarketConfig,
-    CreditLineConfig,
-    IRMConfig
-} from "@3jane/interfaces/IProtocolConfig.sol";
+import {IProtocolConfig, MarketConfig, CreditLineConfig, IRMConfig} from "@3jane/interfaces/IProtocolConfig.sol";
 
 contract MockProtocolConfig is IProtocolConfig {
     mapping(bytes32 => uint256) public config;
@@ -63,16 +58,45 @@ contract MockProtocolConfig is IProtocolConfig {
         config[key] = value;
     }
 
-    function getIsPaused() external view returns (uint256) { return config[IS_PAUSED]; }
-    function getMaxOnCredit() external view returns (uint256) { return config[MAX_ON_CREDIT]; }
-    function getTrancheRatio() external view returns (uint256) { return config[TRANCHE_RATIO]; }
-    function getTrancheShareVariant() external view returns (uint256) { return config[TRANCHE_SHARE_VARIANT]; }
-    function getSusd3LockDuration() external view returns (uint256) { return config[SUSD3_LOCK_DURATION]; }
-    function getSusd3CooldownPeriod() external view returns (uint256) { return config[SUSD3_COOLDOWN_PERIOD]; }
-    function getUsd3CommitmentTime() external view returns (uint256) { return config[USD3_COMMITMENT_TIME]; }
-    function getSusd3WithdrawalWindow() external view returns (uint256) { return config[SUSD3_WITHDRAWAL_WINDOW]; }
-    function getCycleDuration() external view returns (uint256) { return config[CYCLE_DURATION]; }
-    function getUsd3SupplyCap() external view returns (uint256) { return config[USD3_SUPPLY_CAP]; }
+    function getIsPaused() external view returns (uint256) {
+        return config[IS_PAUSED];
+    }
+
+    function getMaxOnCredit() external view returns (uint256) {
+        return config[MAX_ON_CREDIT];
+    }
+
+    function getTrancheRatio() external view returns (uint256) {
+        return config[TRANCHE_RATIO];
+    }
+
+    function getTrancheShareVariant() external view returns (uint256) {
+        return config[TRANCHE_SHARE_VARIANT];
+    }
+
+    function getSusd3LockDuration() external view returns (uint256) {
+        return config[SUSD3_LOCK_DURATION];
+    }
+
+    function getSusd3CooldownPeriod() external view returns (uint256) {
+        return config[SUSD3_COOLDOWN_PERIOD];
+    }
+
+    function getUsd3CommitmentTime() external view returns (uint256) {
+        return config[USD3_COMMITMENT_TIME];
+    }
+
+    function getSusd3WithdrawalWindow() external view returns (uint256) {
+        return config[SUSD3_WITHDRAWAL_WINDOW];
+    }
+
+    function getCycleDuration() external view returns (uint256) {
+        return config[CYCLE_DURATION];
+    }
+
+    function getUsd3SupplyCap() external view returns (uint256) {
+        return config[USD3_SUPPLY_CAP];
+    }
 
     function getCreditLineConfig() external view returns (CreditLineConfig memory) {
         return CreditLineConfig({maxLTV: 0, maxVV: 0, maxCreditLine: 0, minCreditLine: 0, maxDRP: 0});
@@ -89,8 +113,12 @@ contract MockProtocolConfig is IProtocolConfig {
 
     function getIRMConfig() external view returns (IRMConfig memory) {
         return IRMConfig({
-            curveSteepness: 0, adjustmentSpeed: 0, targetUtilization: 0,
-            initialRateAtTarget: 0, minRateAtTarget: 0, maxRateAtTarget: 0
+            curveSteepness: 0,
+            adjustmentSpeed: 0,
+            targetUtilization: 0,
+            initialRateAtTarget: 0,
+            minRateAtTarget: 0,
+            maxRateAtTarget: 0
         });
     }
 }

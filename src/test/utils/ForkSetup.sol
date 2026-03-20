@@ -15,7 +15,7 @@ contract ForkSetup is Test, IEvents {
     address internal constant USD3_ADDR = 0x056B269Eb1f75477a8666ae8C7fE01b64dD55eCc;
     address internal constant SUSD3_ADDR = 0xf689555121e529Ff0463e191F9Bd9d1E496164a7;
 
-    uint256 internal constant FORK_BLOCK = 22089000;
+    uint256 internal constant FORK_BLOCK = 24701100;
 
     ERC20 public asset;
     IStrategyInterface public strategy;
@@ -36,16 +36,9 @@ contract ForkSetup is Test, IEvents {
 
         asset = ERC20(USDC_ADDR);
 
-        strategyFactory = new StrategyFactory(
-            management,
-            performanceFeeRecipient,
-            keeper,
-            emergencyAdmin
-        );
+        strategyFactory = new StrategyFactory(management, performanceFeeRecipient, keeper, emergencyAdmin);
 
-        strategy = IStrategyInterface(
-            strategyFactory.newStrategy("sUSD3 Compounder")
-        );
+        strategy = IStrategyInterface(strategyFactory.newStrategy("sUSD3 Compounder"));
 
         vm.prank(management);
         strategy.acceptManagement();
@@ -65,11 +58,7 @@ contract ForkSetup is Test, IEvents {
         vm.label(SUSD3_ADDR, "sUSD3");
     }
 
-    function depositIntoStrategy(
-        IStrategyInterface _strategy,
-        address _user,
-        uint256 _amount
-    ) public {
+    function depositIntoStrategy(IStrategyInterface _strategy, address _user, uint256 _amount) public {
         vm.prank(_user);
         asset.approve(address(_strategy), _amount);
 
@@ -77,11 +66,7 @@ contract ForkSetup is Test, IEvents {
         _strategy.deposit(_amount, _user);
     }
 
-    function mintAndDepositIntoStrategy(
-        IStrategyInterface _strategy,
-        address _user,
-        uint256 _amount
-    ) public {
+    function mintAndDepositIntoStrategy(IStrategyInterface _strategy, address _user, uint256 _amount) public {
         deal(USDC_ADDR, _user, _amount);
         depositIntoStrategy(_strategy, _user, _amount);
     }

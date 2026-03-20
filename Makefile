@@ -5,6 +5,8 @@ update:; forge update
 build  :; forge build
 size  :; forge build --sizes
 
+format :; forge fmt
+
 # storage inspection
 inspect :; forge inspect ${contract} storageLayout
 
@@ -15,8 +17,8 @@ FORK_URL := ${ETH_RPC_URL} # BASE_RPC_URL, ETH_RPC_URL, ARBITRUM_RPC_URL
 # if we want to run only matching tests, set that here
 test := test_
 
-# local tests without fork
-test  :; forge test -vv --fork-url ${FORK_URL}
+# unit tests (no fork) + fork tests
+test  :; forge test -vv --no-match-contract Fork && forge test -vv --match-contract Fork --fork-url ${FORK_URL}
 trace  :; forge test -vvv --fork-url ${FORK_URL}
 gas  :; forge test --fork-url ${FORK_URL} --gas-report
 test-contract  :; forge test -vv --match-contract $(contract) --fork-url ${FORK_URL}

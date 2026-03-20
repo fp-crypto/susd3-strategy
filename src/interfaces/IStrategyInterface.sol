@@ -15,4 +15,17 @@ interface IStrategyInterface is IStrategy {
     function balanceOfStake() external view returns (uint256);
     function valueOfVault() external view returns (uint256);
     function vaultsMaxWithdraw() external view returns (uint256);
+
+    // Rewards
+    function claimRewards(uint256 _totalAllocation, bytes32[] calldata _proof) external;
+
+    // Auction
+    function setAuction(address _auction) external;
+    function setUseAuction(bool _useAuction) external;
+    function setMinAmountToSell(uint256 _minAmountToSell) external;
+    function auction() external view returns (address);
+    function useAuction() external view returns (bool);
+    function kickable(address _token) external view returns (uint256);
+    function kickAuction(address _from) external returns (uint256);
+    function auctionTrigger(address _from) external view returns (bool, bytes memory);
 }
