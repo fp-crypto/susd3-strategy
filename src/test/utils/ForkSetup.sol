@@ -5,7 +5,6 @@ import "forge-std/console2.sol";
 import {Test} from "forge-std/Test.sol";
 
 import {Strategy, ERC20} from "../../Strategy.sol";
-import {StrategyFactory} from "../../StrategyFactory.sol";
 import {IStrategyInterface} from "../../interfaces/IStrategyInterface.sol";
 import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
 import {IEvents} from "@tokenized-strategy/interfaces/IEvents.sol";
@@ -19,8 +18,6 @@ contract ForkSetup is Test, IEvents {
 
     ERC20 public asset;
     IStrategyInterface public strategy;
-    StrategyFactory public strategyFactory;
-
     address public user = address(10);
     address public keeper = address(4);
     address public management = address(1);
@@ -36,9 +33,11 @@ contract ForkSetup is Test, IEvents {
 
         asset = ERC20(USDC_ADDR);
 
-        strategyFactory = new StrategyFactory(management, performanceFeeRecipient, keeper, emergencyAdmin);
-
-        strategy = IStrategyInterface(strategyFactory.newStrategy("sUSD3 Compounder"));
+        strategy = IStrategyInterface(address(new Strategy("sUSD3 Compounder")));
+        strategy.setPerformanceFeeRecipient(performanceFeeRecipient);
+        strategy.setKeeper(keeper);
+        strategy.setPendingManagement(management);
+        strategy.setEmergencyAdmin(emergencyAdmin);
 
         vm.prank(management);
         strategy.acceptManagement();

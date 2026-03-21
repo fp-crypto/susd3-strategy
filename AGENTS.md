@@ -26,7 +26,6 @@ This is a **Yearn V3 tokenized strategy** that compounds sUSD3 staking yield usi
 ### Key contracts
 
 - **`Strategy.sol`** — Extends `Base4626Compounder`. Overrides `_stake()`, `_unStake()`, `balanceOfStake()`, `vaultsMaxWithdraw()`, `availableDepositLimit()`. All three token addresses (USDC, USD3, sUSD3) are hardcoded constants. Constructor takes only a name.
-- **`StrategyFactory.sol`** — Deploys Strategy instances with management/keeper/fee config. `newStrategy(string)` takes only a name.
 - **`Base4626Compounder`** (in `@periphery/`) — Handles `_deployFunds` (deposit + stake), `_freeFunds` (unstake + redeem), `_harvestAndReport`, and `_emergencyWithdraw`. Strategy overrides the staking hooks.
 
 ### sUSD3 constraints
