@@ -8,6 +8,7 @@ interface IStrategyInterface is IStrategy {
     function staking() external view returns (IStrategy);
     function depositorWhitelist(address) external view returns (bool);
     function setDepositorWhitelist(address _depositor, bool _allowed) external;
+    function sweep(address _token, uint256 _amount, address _recipient) external;
     function startCooldown(uint256 _shares) external;
     function cancelCooldown() external;
     function balanceOfAsset() external view returns (uint256);

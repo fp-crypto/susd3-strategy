@@ -185,6 +185,42 @@ contract OperationTest is Setup {
         strategy.report();
     }
 
+    function test_sweepRandomToken() public {
+        ERC20 randomToken = ERC20(makeAddr("randomToken"));
+        vm.etch(address(randomToken), address(asset).code);
+
+        uint256 amount = 100e6;
+        airdrop(randomToken, address(strategy), amount);
+
+        address recipient = makeAddr("recipient");
+        vm.prank(management);
+        strategy.sweep(address(randomToken), amount, recipient);
+
+        assertEq(randomToken.balanceOf(recipient), amount);
+        assertEq(randomToken.balanceOf(address(strategy)), 0);
+    }
+
+    function test_sweepProtectedTokensReverts() public {
+        vm.startPrank(management);
+
+        vm.expectRevert("!asset");
+        strategy.sweep(address(asset), 1, management);
+
+        vm.expectRevert("!vault");
+        strategy.sweep(address(usd3), 1, management);
+
+        vm.expectRevert("!staking");
+        strategy.sweep(address(susd3), 1, management);
+
+        vm.stopPrank();
+    }
+
+    function test_sweepOnlyManagement() public {
+        vm.prank(user);
+        vm.expectRevert("!management");
+        strategy.sweep(makeAddr("token"), 1, user);
+    }
+
     function test_setDepositorWhitelist() public {
         address newDepositor = makeAddr("newDepositor");
 

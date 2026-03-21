@@ -162,4 +162,15 @@ contract Strategy is Base4626Compounder, AuctionSwapper {
     function cancelCooldown() external onlyManagement {
         ISUSD3(address(staking)).cancelCooldown();
     }
+
+    /// @notice Sweep any token that is not asset, vault, or staking to a recipient.
+    /// @param _token The token to sweep.
+    /// @param _amount The amount to sweep.
+    /// @param _recipient The address to send the tokens to.
+    function sweep(address _token, uint256 _amount, address _recipient) external onlyManagement {
+        require(_token != address(asset), "!asset");
+        require(_token != address(vault), "!vault");
+        require(_token != address(staking), "!staking");
+        ERC20(_token).safeTransfer(_recipient, _amount);
+    }
 }
