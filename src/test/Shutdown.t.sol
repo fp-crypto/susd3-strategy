@@ -1,7 +1,6 @@
 pragma solidity ^0.8.18;
 
-import "forge-std/console2.sol";
-import {Setup, ERC20, IStrategyInterface} from "./utils/Setup.sol";
+import {Setup} from "./utils/Setup.sol";
 
 contract ShutdownTest is Setup {
     function setUp() public override {

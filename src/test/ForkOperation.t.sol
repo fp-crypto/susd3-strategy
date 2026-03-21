@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "forge-std/console2.sol";
-import {ForkSetup, ERC20, IStrategyInterface} from "./utils/ForkSetup.sol";
+import {ForkSetup} from "./utils/ForkSetup.sol";
 import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
 
 contract ForkOperationTest is ForkSetup {

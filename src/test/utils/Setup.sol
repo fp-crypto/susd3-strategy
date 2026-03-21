@@ -1,19 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.18;
 
-import "forge-std/console2.sol";
 import {Test} from "forge-std/Test.sol";
 
 import {Strategy, ERC20} from "../../Strategy.sol";
 import {IStrategyInterface} from "../../interfaces/IStrategyInterface.sol";
-import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
 import {IEvents} from "@tokenized-strategy/interfaces/IEvents.sol";
 import {TokenizedStrategy} from "@tokenized-strategy/TokenizedStrategy.sol";
 
 import {USD3} from "@3jane/usd3/USD3.sol";
 import {sUSD3} from "@3jane/usd3/sUSD3.sol";
 import {MorphoCredit} from "@3jane/MorphoCredit.sol";
-import {IMorpho, MarketParams, Id} from "@3jane/interfaces/IMorpho.sol";
+import {IMorpho, MarketParams} from "@3jane/interfaces/IMorpho.sol";
 import {MarketParamsLib} from "@3jane/libraries/MarketParamsLib.sol";
 import {IrmMock} from "@3jane/mocks/IrmMock.sol";
 import {HelperMock} from "@3jane/mocks/HelperMock.sol";

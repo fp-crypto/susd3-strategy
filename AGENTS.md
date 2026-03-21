@@ -4,18 +4,16 @@ This file provides guidance to coding agents when working with code in this repo
 
 ## Build & Test
 
-```bash
-forge build                                    # compile
-forge test --no-match-contract ForkOperation   # run unit tests (no RPC needed)
-ETH_RPC_URL=<rpc> forge test                   # run all tests including fork tests
-forge test --match-test test_functionName -vvv # run single test with traces
-forge test --match-contract ContractName       # run single test contract
-forge coverage                                 # coverage report
-```
+See @Makefile for all available targets. Key ones:
+
+- `make build` — compile
+- `make test` — unit tests (no fork) + fork tests (requires `ETH_RPC_URL`)
+- `make test-unit` — unit tests only (no RPC needed)
+- `make test-test test=test_functionName` — single test with traces
+- `make lint` — forge lint
+- `make format` — forge fmt
 
 Fork tests (`ForkOperation.t.sol`) require `ETH_RPC_URL` and pin to a specific mainnet block. Unit tests use mocked contracts etched at mainnet addresses via `vm.etch`.
-
-Linting: `yarn lint` (solhint), `yarn format` (prettier).
 
 ## Architecture
 

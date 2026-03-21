@@ -5,7 +5,8 @@ update:; forge update
 build  :; forge build
 size  :; forge build --sizes
 
-format :; forge fmt
+format :; forge fmt src/
+lint  :; forge lint src/
 
 # storage inspection
 inspect :; forge inspect ${contract} storageLayout
@@ -19,6 +20,7 @@ test := test_
 
 # unit tests (no fork) + fork tests
 test  :; forge test -vv --no-match-contract Fork && forge test -vv --match-contract Fork --fork-url ${FORK_URL}
+test-unit :; forge test -vv --no-match-contract Fork
 trace  :; forge test -vvv --fork-url ${FORK_URL}
 gas  :; forge test --fork-url ${FORK_URL} --gas-report
 test-contract  :; forge test -vv --match-contract $(contract) --fork-url ${FORK_URL}

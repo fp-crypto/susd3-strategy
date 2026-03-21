@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.18;
 
-import "forge-std/console2.sol";
 import {Test} from "forge-std/Test.sol";
 
 import {Strategy, ERC20} from "../../Strategy.sol";
 import {IStrategyInterface} from "../../interfaces/IStrategyInterface.sol";
-import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
 import {IEvents} from "@tokenized-strategy/interfaces/IEvents.sol";
 
 contract ForkSetup is Test, IEvents {
