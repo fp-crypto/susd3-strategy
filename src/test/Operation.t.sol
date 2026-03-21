@@ -103,8 +103,6 @@ contract OperationTest is Setup {
 
         assertEq(strategy.balanceOfVault(), 0, "no loose USD3");
         assertGt(strategy.balanceOfStake(), 0, "should be staked");
-        (bool shouldTend,) = strategy.tendTrigger();
-        assertFalse(shouldTend);
     }
 
     function test_shutdownDoesNotUnlockFunds() public {

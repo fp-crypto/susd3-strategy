@@ -91,11 +91,6 @@ contract Strategy is Base4626Compounder, AuctionSwapper {
         _stake();
     }
 
-    /// @inheritdoc BaseStrategy
-    function _tendTrigger() internal view override returns (bool) {
-        return vault.balanceOf(address(this)) > 0;
-    }
-
     /*//////////////////////////////////////////////////////////////
                         DEPOSIT / WITHDRAW LIMITS
     //////////////////////////////////////////////////////////////*/
