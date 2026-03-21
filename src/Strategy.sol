@@ -109,7 +109,7 @@ contract Strategy is Base4626Compounder, AuctionSwapper {
         uint256 vaultLimit = super.availableDepositLimit(_owner);
 
         uint256 stakingCapUSD3 = ISUSD3(address(staking)).availableDepositLimit(address(this));
-        uint256 stakingCapUSDC = vault.previewRedeem(stakingCapUSD3);
+        uint256 stakingCapUSDC = vault.previewMint(stakingCapUSD3);
 
         uint256 currentAssets = TokenizedStrategy.totalAssets();
         uint256 limitCap = depositLimit > currentAssets ? depositLimit - currentAssets : 0;
