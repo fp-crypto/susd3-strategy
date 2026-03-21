@@ -221,6 +221,34 @@ contract OperationTest is Setup {
         strategy.sweep(makeAddr("token"), 1, user);
     }
 
+    function test_depositLimitDefault() public view {
+        assertEq(strategy.depositLimit(), type(uint256).max);
+    }
+
+    function test_depositLimitCapsDeposits() public {
+        uint256 limit = 1_000e6;
+        vm.prank(management);
+        strategy.setDepositLimit(limit);
+
+        mintAndDepositIntoStrategy(strategy, user, limit);
+
+        assertEq(strategy.availableDepositLimit(user), 0);
+
+        uint256 extra = 1e6;
+        airdrop(asset, user, extra);
+        vm.startPrank(user);
+        asset.approve(address(strategy), extra);
+        vm.expectRevert("ERC4626: deposit more than max");
+        strategy.deposit(extra, user);
+        vm.stopPrank();
+    }
+
+    function test_setDepositLimitOnlyManagement() public {
+        vm.prank(user);
+        vm.expectRevert("!management");
+        strategy.setDepositLimit(0);
+    }
+
     function test_setDepositorWhitelist() public {
         address newDepositor = makeAddr("newDepositor");
 

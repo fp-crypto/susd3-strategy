@@ -6,6 +6,8 @@ import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
 interface IStrategyInterface is IStrategy {
     function vault() external view returns (IStrategy);
     function staking() external view returns (IStrategy);
+    function depositLimit() external view returns (uint256);
+    function setDepositLimit(uint256 _depositLimit) external;
     function depositorWhitelist(address) external view returns (bool);
     function setDepositorWhitelist(address _depositor, bool _allowed) external;
     function sweep(address _token, uint256 _amount, address _recipient) external;

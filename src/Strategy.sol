@@ -28,6 +28,9 @@ contract Strategy is Base4626Compounder, AuctionSwapper {
     /// @notice The sUSD3 staking vault.
     IStrategy public immutable staking;
 
+    /// @notice Maximum total assets the strategy will accept.
+    uint256 public depositLimit = type(uint256).max;
+
     /// @notice Whether a given address is allowed to deposit.
     mapping(address => bool) public depositorWhitelist;
 
@@ -108,7 +111,11 @@ contract Strategy is Base4626Compounder, AuctionSwapper {
         uint256 stakingCapUSD3 = ISUSD3(address(staking)).availableDepositLimit(address(this));
         uint256 stakingCapUSDC = vault.previewRedeem(stakingCapUSD3);
 
-        return vaultLimit < stakingCapUSDC ? vaultLimit : stakingCapUSDC;
+        uint256 currentAssets = TokenizedStrategy.totalAssets();
+        uint256 limitCap = depositLimit > currentAssets ? depositLimit - currentAssets : 0;
+
+        uint256 limit = vaultLimit < stakingCapUSDC ? vaultLimit : stakingCapUSDC;
+        return limit < limitCap ? limit : limitCap;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -125,6 +132,12 @@ contract Strategy is Base4626Compounder, AuctionSwapper {
     /*//////////////////////////////////////////////////////////////
                         MANAGEMENT FUNCTIONS
     //////////////////////////////////////////////////////////////*/
+
+    /// @notice Set the maximum total assets the strategy will accept.
+    /// @param _depositLimit The new deposit limit.
+    function setDepositLimit(uint256 _depositLimit) external onlyManagement {
+        depositLimit = _depositLimit;
+    }
 
     /// @notice Set whether a depositor is allowed to deposit.
     /// @param _depositor Address to update.
