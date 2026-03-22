@@ -41,11 +41,9 @@ contract Setup is Test, IEvents {
     address internal constant TOKENIZED_STRATEGY_ADDR = 0xD377919FA87120584B21279a491F82D5265A139c;
 
     // OZ v5 ERC-7201 Initializable storage slot
-    bytes32 internal constant _INITIALIZABLE_SLOT =
-        0xf0c57e16840df040f15088dc2f81fe391c3923bec73e23a9662efc9c229c6a00;
+    bytes32 internal constant _INITIALIZABLE_SLOT = 0xf0c57e16840df040f15088dc2f81fe391c3923bec73e23a9662efc9c229c6a00;
     // Yearn TokenizedStrategy base storage slot (holds StrategyData.asset at offset 0)
-    bytes32 internal constant _TOKENIZED_STRATEGY_SLOT =
-        bytes32(uint256(keccak256("yearn.base.strategy.storage")) - 1);
+    bytes32 internal constant _TOKENIZED_STRATEGY_SLOT = bytes32(uint256(keccak256("yearn.base.strategy.storage")) - 1);
 
     ERC20 public asset; // USDC
     IStrategyInterface public strategy;

@@ -39,7 +39,7 @@ coverage-debug :; forge coverage --report debug --fork-url ${FORK_URL}
 
 coverage-html:
 	@echo "Running coverage..."
-	forge coverage --report lcov --fork-url ${FORK_URL}
+	forge coverage --report lcov --no-match-contract Fork
 	@if [ "`uname`" = "Darwin" ]; then \
 		lcov --ignore-errors inconsistent --remove lcov.info 'src/test/**' --output-file lcov.info; \
 		genhtml --ignore-errors inconsistent -o coverage-report lcov.info; \
