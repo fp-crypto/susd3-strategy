@@ -40,6 +40,13 @@ contract Setup is Test, IEvents {
     address internal constant WAUSDC_ADDR = 0xD4fa2D31b7968E448877f69A96DE69f5de8cD23E;
     address internal constant TOKENIZED_STRATEGY_ADDR = 0xD377919FA87120584B21279a491F82D5265A139c;
 
+    // OZ v5 ERC-7201 Initializable storage slot
+    bytes32 internal constant _INITIALIZABLE_SLOT =
+        0xf0c57e16840df040f15088dc2f81fe391c3923bec73e23a9662efc9c229c6a00;
+    // Yearn TokenizedStrategy base storage slot (holds StrategyData.asset at offset 0)
+    bytes32 internal constant _TOKENIZED_STRATEGY_SLOT =
+        bytes32(uint256(keccak256("yearn.base.strategy.storage")) - 1);
+
     ERC20 public asset; // USDC
     IStrategyInterface public strategy;
     USD3 public usd3;
@@ -145,6 +152,7 @@ contract Setup is Test, IEvents {
         // Etch USD3 implementation directly at the hardcoded address
         USD3 usd3Impl = new USD3();
         vm.etch(USD3_ADDR, address(usd3Impl).code);
+        _clearStorage(USD3_ADDR);
         USD3(USD3_ADDR).initialize(address(morpho), MarketParamsLib.id(marketParams), management, keeper);
         USD3(USD3_ADDR).reinitialize();
         usd3 = USD3(USD3_ADDR);
@@ -159,6 +167,7 @@ contract Setup is Test, IEvents {
         // Etch sUSD3 implementation directly at the hardcoded address
         sUSD3 susd3Impl = new sUSD3();
         vm.etch(SUSD3_ADDR, address(susd3Impl).code);
+        _clearStorage(SUSD3_ADDR);
         sUSD3(SUSD3_ADDR).initialize(USD3_ADDR, management, keeper);
         susd3 = sUSD3(SUSD3_ADDR);
 
@@ -215,5 +224,13 @@ contract Setup is Test, IEvents {
 
     function skipLockPeriod() internal {
         skip(91 days);
+    }
+
+    function _clearStorage(address target) internal {
+        vm.store(target, _INITIALIZABLE_SLOT, bytes32(0));
+        vm.store(target, _TOKENIZED_STRATEGY_SLOT, bytes32(0));
+        for (uint256 i; i < 103; i++) {
+            vm.store(target, bytes32(i), bytes32(0));
+        }
     }
 }

@@ -4,7 +4,6 @@ on:
   push:
     branches:
     - master
-    - develop
   pull_request:
 
 env:
@@ -25,8 +24,6 @@ jobs:
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: nightly
 
       - name: Install lcov
         run: sudo apt-get -y install lcov
@@ -43,8 +40,8 @@ jobs:
       - name: Upload coverage report artifact
         uses: actions/upload-artifact@v4
         with:
-          name: CoverageReport # Artifact name
-          path: coverage-report # Directory containing files to upload
+          name: CoverageReport
+          path: coverage-report
 
       - name: Add comment to PR
         if: github.event_name == 'pull_request' && env.GH_TOKEN != ''

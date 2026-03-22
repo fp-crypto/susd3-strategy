@@ -4,7 +4,6 @@ on:
   push:
     branches:
     - master
-    - develop
   pull_request:
 
 env:
@@ -18,14 +17,12 @@ jobs:
     name: Foundry project
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: nightly
 
       - name: Run Forge build
         run: |
@@ -33,7 +30,11 @@ jobs:
           forge build --sizes
         id: build
 
-      - name: Run Forge tests
-        run: |
-          forge test -vvv --fork-url ${{ secrets.ETH_RPC_URL }}
-        id: test
+      - name: Run Forge lint
+        run: forge lint src/
+
+      - name: Run unit tests
+        run: forge test -vv --no-match-contract Fork
+
+      - name: Run fork tests
+        run: forge test -vv --match-contract Fork --fork-url ${{ secrets.ETH_RPC_URL }}
