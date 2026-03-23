@@ -39,6 +39,8 @@ contract Setup is Test, IEvents {
     address internal constant SUSD3_ADDR = 0xf689555121e529Ff0463e191F9Bd9d1E496164a7;
     address internal constant WAUSDC_ADDR = 0xD4fa2D31b7968E448877f69A96DE69f5de8cD23E;
     address internal constant TOKENIZED_STRATEGY_ADDR = 0xD377919FA87120584B21279a491F82D5265A139c;
+    address internal constant JANE_ADDR = 0x333333330522F64EE8d0b3039c460b41670e3404;
+    address internal constant REWARDS_DISTRIBUTOR = 0xaC6985D4dBcd89CCAD71DB9bf0309eaF57F064e8;
 
     // OZ v5 ERC-7201 Initializable storage slot
     bytes32 internal constant _INITIALIZABLE_SLOT = 0xf0c57e16840df040f15088dc2f81fe391c3923bec73e23a9662efc9c229c6a00;
@@ -103,6 +105,9 @@ contract Setup is Test, IEvents {
         vm.etch(USDC_ADDR, address(mockUsdc).code);
         vm.store(USDC_ADDR, bytes32(uint256(5)), bytes32(uint256(6)));
         asset = ERC20(USDC_ADDR);
+
+        MockERC20 mockJane = new MockERC20("Jane Token", "JANE", 18);
+        vm.etch(JANE_ADDR, address(mockJane).code);
 
         MockWaUSDC mockWaUSDC = new MockWaUSDC(USDC_ADDR);
         vm.etch(WAUSDC_ADDR, address(mockWaUSDC).code);

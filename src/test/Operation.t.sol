@@ -3,6 +3,14 @@ pragma solidity ^0.8.18;
 
 import {Setup, ERC20} from "./utils/Setup.sol";
 
+interface IRewardsDistributor {
+    function claim(address user, uint256 totalAllocation, bytes32[] calldata proof) external;
+}
+
+interface IHealthCheck {
+    function setDoHealthCheck(bool _doHealthCheck) external;
+}
+
 contract OperationTest is Setup {
     function setUp() public override {
         super.setUp();
@@ -258,5 +266,116 @@ contract OperationTest is Setup {
         vm.prank(user);
         vm.expectRevert("!management");
         strategy.setDepositorWhitelist(newDepositor, false);
+    }
+
+    function test_lossReport() public {
+        uint256 amount = 1_000e6;
+        mintAndDepositIntoStrategy(strategy, user, amount);
+
+        skipLockPeriod();
+
+        uint256 usd3Balance = ERC20(address(usd3)).balanceOf(address(susd3));
+        uint256 reduction = usd3Balance / 10;
+        deal(address(usd3), address(susd3), usd3Balance - reduction);
+
+        vm.prank(keeper);
+        susd3.report();
+
+        skip(profitMaxUnlockTime + 1);
+
+        vm.prank(management);
+        IHealthCheck(address(strategy)).setDoHealthCheck(false);
+
+        vm.prank(keeper);
+        (uint256 profit, uint256 loss) = strategy.report();
+
+        assertGt(loss, 0, "should have loss");
+        assertEq(profit, 0, "should have no profit");
+    }
+
+    function test_depositLimitZero() public {
+        vm.prank(management);
+        strategy.setDepositLimit(0);
+
+        assertEq(strategy.availableDepositLimit(user), 0);
+
+        uint256 amount = 1_000e6;
+        airdrop(asset, user, amount);
+        vm.startPrank(user);
+        asset.approve(address(strategy), amount);
+        vm.expectRevert("ERC4626: deposit more than max");
+        strategy.deposit(amount, user);
+        vm.stopPrank();
+    }
+
+    function test_depositLimitDecreaseBelowTotalAssets() public {
+        uint256 amount = 1_000e6;
+        mintAndDepositIntoStrategy(strategy, user, amount);
+
+        vm.prank(management);
+        strategy.setDepositLimit(amount / 2);
+
+        assertEq(strategy.availableDepositLimit(user), 0);
+
+        uint256 extra = 1e6;
+        airdrop(asset, user, extra);
+        vm.startPrank(user);
+        asset.approve(address(strategy), extra);
+        vm.expectRevert("ERC4626: deposit more than max");
+        strategy.deposit(extra, user);
+        vm.stopPrank();
+
+        skipLockPeriod();
+
+        vm.prank(keeper);
+        strategy.report();
+
+        uint256 shares = strategy.balanceOf(user);
+        vm.prank(user);
+        strategy.redeem(shares, user, user);
+
+        assertGt(asset.balanceOf(user), 0, "should withdraw existing position");
+    }
+
+    function test_depositLimitEqualsTotalAssets() public {
+        uint256 amount = 1_000e6;
+        mintAndDepositIntoStrategy(strategy, user, amount);
+
+        vm.prank(management);
+        strategy.setDepositLimit(amount);
+
+        assertEq(strategy.availableDepositLimit(user), 0);
+    }
+
+    function test_claimRewardsCallsDistributor() public {
+        bytes32[] memory proof = new bytes32[](1);
+        proof[0] = bytes32(uint256(1));
+        uint256 totalAllocation = 100e18;
+
+        vm.mockCall(
+            REWARDS_DISTRIBUTOR,
+            abi.encodeWithSelector(IRewardsDistributor.claim.selector, address(strategy), totalAllocation, proof),
+            abi.encode()
+        );
+
+        vm.expectCall(
+            REWARDS_DISTRIBUTOR,
+            abi.encodeWithSelector(IRewardsDistributor.claim.selector, address(strategy), totalAllocation, proof)
+        );
+        strategy.claimRewards(totalAllocation, proof);
+    }
+
+    function test_setUseAuction() public {
+        vm.prank(management);
+        strategy.setUseAuction(true);
+        assertTrue(strategy.useAuction());
+
+        vm.prank(management);
+        strategy.setUseAuction(false);
+        assertFalse(strategy.useAuction());
+
+        vm.prank(user);
+        vm.expectRevert("!management");
+        strategy.setUseAuction(true);
     }
 }
