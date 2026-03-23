@@ -20,6 +20,7 @@ contract FunctionSignatureTest is Setup {
         strategy.totalAssets();
         strategy.availableDepositLimit(user);
         strategy.availableWithdrawLimit(user);
-        strategy.depositorWhitelist(user);
+        strategy.open();
+        strategy.allowed(user);
     }
 }

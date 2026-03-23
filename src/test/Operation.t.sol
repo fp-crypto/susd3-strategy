@@ -2,6 +2,7 @@
 pragma solidity ^0.8.18;
 
 import {Setup, ERC20} from "./utils/Setup.sol";
+import {IStrategy} from "@tokenized-strategy/interfaces/IStrategy.sol";
 
 interface IRewardsDistributor {
     function claim(address user, uint256 totalAllocation, bytes32[] calldata proof) external;
@@ -253,19 +254,40 @@ contract OperationTest is Setup {
         strategy.setDepositLimit(0);
     }
 
-    function test_setDepositorWhitelist() public {
+    function test_setAllowed() public {
         address newDepositor = makeAddr("newDepositor");
 
-        assertFalse(strategy.depositorWhitelist(newDepositor));
+        assertFalse(strategy.allowed(newDepositor));
 
         vm.prank(management);
-        strategy.setDepositorWhitelist(newDepositor, true);
+        strategy.setAllowed(newDepositor, true);
 
-        assertTrue(strategy.depositorWhitelist(newDepositor));
+        assertTrue(strategy.allowed(newDepositor));
 
         vm.prank(user);
         vm.expectRevert("!management");
-        strategy.setDepositorWhitelist(newDepositor, false);
+        strategy.setAllowed(newDepositor, false);
+    }
+
+    function test_setOpen() public {
+        assertFalse(strategy.open());
+
+        vm.prank(management);
+        strategy.setOpen(true);
+
+        assertTrue(strategy.open());
+
+        address anyone = makeAddr("anyone");
+        assertGt(strategy.availableDepositLimit(anyone), 0);
+
+        vm.prank(management);
+        strategy.setOpen(false);
+
+        assertEq(strategy.availableDepositLimit(anyone), 0);
+
+        vm.prank(user);
+        vm.expectRevert("!management");
+        strategy.setOpen(true);
     }
 
     function test_lossReport() public {
@@ -377,5 +399,29 @@ contract OperationTest is Setup {
         vm.prank(user);
         vm.expectRevert("!management");
         strategy.setUseAuction(true);
+    }
+
+    function test_vaultsMaxWithdraw_cappedByUsd3Liquidity() public {
+        uint256 amount = 1_000e6;
+        mintAndDepositIntoStrategy(strategy, user, amount);
+
+        skipLockPeriod();
+
+        vm.prank(keeper);
+        strategy.report();
+
+        uint256 uncapped = strategy.vaultsMaxWithdraw();
+        assertGt(uncapped, 0, "should have withdrawable value");
+
+        uint256 usd3UsdcBalance = asset.balanceOf(address(usd3));
+        uint256 drainAmount = usd3UsdcBalance > 1e6 ? usd3UsdcBalance - 1e6 : 0;
+        if (drainAmount > 0) {
+            deal(address(asset), address(usd3), usd3UsdcBalance - drainAmount);
+        }
+
+        uint256 capped = strategy.vaultsMaxWithdraw();
+        uint256 usd3Liquidity = IStrategy(address(usd3)).availableWithdrawLimit(address(strategy));
+        assertLe(capped, usd3Liquidity, "should be capped by USD3 liquidity");
+        assertLe(capped, uncapped, "capped should not exceed uncapped");
     }
 }

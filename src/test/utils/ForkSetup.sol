@@ -41,7 +41,7 @@ contract ForkSetup is Test, IEvents {
         strategy.acceptManagement();
 
         vm.prank(management);
-        strategy.setDepositorWhitelist(user, true);
+        strategy.setAllowed(user, true);
 
         factory = strategy.FACTORY();
         decimals = asset.decimals();

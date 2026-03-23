@@ -84,7 +84,7 @@ contract FuzzTest is Setup {
 
         address user2 = makeAddr("user2");
         vm.prank(management);
-        strategy.setDepositorWhitelist(user2, true);
+        strategy.setAllowed(user2, true);
 
         mintAndDepositIntoStrategy(strategy, user, _amount1);
         mintAndDepositIntoStrategy(strategy, user2, _amount2);

@@ -16,7 +16,7 @@ interface IRewardsDistributor {
     function claim(address user, uint256 totalAllocation, bytes32[] calldata proof) external;
 }
 
-contract Strategy is Base4626Compounder, AuctionSwapper {
+contract Strategy is AuctionSwapper, Base4626Compounder {
     using SafeERC20 for ERC20;
 
     address internal constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
@@ -31,13 +31,14 @@ contract Strategy is Base4626Compounder, AuctionSwapper {
     /// @notice Maximum total assets the strategy will accept.
     uint256 public depositLimit = type(uint256).max;
 
-    /// @notice Whether a given address is allowed to deposit.
-    mapping(address => bool) public depositorWhitelist;
+    /// @notice Whether deposits are open to all addresses.
+    bool public open;
 
-    /// @notice Emitted when a depositor's whitelist status changes.
-    /// @param depositor The address whose status changed.
-    /// @param allowed The new whitelist status.
-    event DepositorWhitelistUpdated(address indexed depositor, bool allowed);
+    /// @notice Whether a given address is allowed to deposit.
+    mapping(address => bool) public allowed;
+
+    event OpenSet(bool open);
+    event AllowedSet(address indexed depositor, bool allowed);
 
     constructor(string memory _name) Base4626Compounder(USDC, _name, USD3) {
         staking = IStrategy(SUSD3);
@@ -71,7 +72,9 @@ contract Strategy is Base4626Compounder, AuctionSwapper {
         uint256 looseVaultShares = vault.maxRedeem(address(this));
         uint256 stakingRedeemable = staking.maxRedeem(address(this));
         uint256 redeemableVaultShares = staking.previewRedeem(stakingRedeemable);
-        return vault.previewRedeem(looseVaultShares + redeemableVaultShares);
+        uint256 totalValue = vault.previewRedeem(looseVaultShares + redeemableVaultShares);
+        uint256 usd3Liquidity = vault.availableWithdrawLimit(address(this));
+        return totalValue < usd3Liquidity ? totalValue : usd3Liquidity;
     }
 
     /// @inheritdoc Base4626Compounder
@@ -97,7 +100,7 @@ contract Strategy is Base4626Compounder, AuctionSwapper {
 
     /// @inheritdoc Base4626Compounder
     function availableDepositLimit(address _owner) public view override returns (uint256) {
-        if (!depositorWhitelist[_owner]) {
+        if (!open && !allowed[_owner]) {
             return 0;
         }
 
@@ -134,12 +137,19 @@ contract Strategy is Base4626Compounder, AuctionSwapper {
         depositLimit = _depositLimit;
     }
 
+    /// @notice Set whether deposits are open to all addresses.
+    /// @param _open Whether deposits are open.
+    function setOpen(bool _open) external onlyManagement {
+        open = _open;
+        emit OpenSet(_open);
+    }
+
     /// @notice Set whether a depositor is allowed to deposit.
     /// @param _depositor Address to update.
-    /// @param _allowed Whether the address is whitelisted.
-    function setDepositorWhitelist(address _depositor, bool _allowed) external onlyManagement {
-        depositorWhitelist[_depositor] = _allowed;
-        emit DepositorWhitelistUpdated(_depositor, _allowed);
+    /// @param _allowed Whether the address is allowed.
+    function setAllowed(address _depositor, bool _allowed) external onlyManagement {
+        allowed[_depositor] = _allowed;
+        emit AllowedSet(_depositor, _allowed);
     }
 
     /// @notice Set the auction contract to use for selling rewards.
