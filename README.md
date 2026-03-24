@@ -36,6 +36,10 @@ Unit tests use mocked contracts etched at mainnet addresses. Fork tests (`ForkOp
 
 See [AGENTS.md](AGENTS.md) for full architecture docs.
 
+## Security Considerations
+
+- **sUSD3 lock reset on tend/report**: Every `_stake()` call (via `tend()` or `report()`) resets the sUSD3 30-day lock period. Both entry points are gated by `onlyKeepers`. The keeper MUST NOT be set to a permissionless relayer (e.g. `0x52605BbF54845f520a3E94792d019f62407db2f8`) or an attacker could grief the lock by repeatedly calling `tend()`.
+
 ## CI
 
 GitHub Actions workflows: [test](.github/workflows/test.yml), [lint](.github/workflows/lint.yaml), [coverage](.github/workflows/coverage.yml), [slither](.github/workflows/slither.yml).

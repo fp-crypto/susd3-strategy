@@ -85,6 +85,10 @@ contract Strategy is AuctionSwapper, Base4626Compounder {
     }
 
     /// @inheritdoc BaseStrategy
+    /// @dev Stakes idle vault shares into sUSD3. Each stake call resets the
+    ///  sUSD3 30-day lock period. The keeper MUST NOT be set to a
+    ///  permissionless relayer — doing so would let anyone grief the lock
+    ///  by repeatedly calling tend().
     function _tend(
         uint256 /*_totalIdle*/
     )

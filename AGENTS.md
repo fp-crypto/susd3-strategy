@@ -32,6 +32,7 @@ This is a **Yearn V3 tokenized strategy** that compounds sUSD3 staking yield usi
 - **Cooldown** for withdrawals (currently 0, but config-driven). Management can call `startCooldown`/`cancelCooldown`.
 - **Shutdown does NOT unlock staked funds** — sUSD3 enforces its own lock regardless of strategy state.
 - `vaultsMaxWithdraw()` uses `staking.maxRedeem()` which encodes all lock/cooldown logic.
+- **Keeper must not be permissionless** — `tend()` and `report()` both call `_stake()` which resets the sUSD3 lock. A permissionless keeper relayer would allow griefing.
 
 ### Deposit controls
 
